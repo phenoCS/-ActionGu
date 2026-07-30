@@ -1,7 +1,16 @@
 @echo off
-chcp 65001 >nul 2>&1
+setlocal
 cd /d "%~dp0"
-title 任务修仙计时器 · 启动器
-:: 一键启动：检测/自动安装 Python 后运行 main.py
-:: 若本机已装 Python 则直接运行；否则静默安装后再运行，用户无需任何手动操作。
+
+:: Clear Mark-of-the-Web so the script is not blocked by SmartScreen / execution policy
+powershell -NoProfile -Command "try { Unblock-File -Path '%~dp0launcher.ps1' -ErrorAction SilentlyContinue } catch {}" >nul 2>&1
+
+echo Task Cultivation Timer - Launcher
+echo.
+
 powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0launcher.ps1"
+
+echo.
+echo Launcher finished. Exit code: %errorlevel%
+echo Press any key to close this window...
+pause >nul
