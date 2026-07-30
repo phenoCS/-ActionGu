@@ -10,14 +10,21 @@
 """
 
 import os
+import sys
 import json
 import time
 import tkinter as tk
 from tkinter import messagebox
 
 # ====================== 常量配置 ======================
-# data.json 存放于脚本所在目录，打包为 exe 后依然可用
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# data.json 存放目录：
+#   - 以脚本运行时，使用脚本所在目录；
+#   - 打包为单文件 exe 后，__file__ 会指向临时解压目录（_MEIPASS），
+#     必须用 sys.executable 所在目录，否则数据会在程序退出后丢失。
+if getattr(sys, "frozen", False):
+    BASE_DIR = os.path.dirname(os.path.abspath(sys.executable))
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE_DIR, "data.json")
 
 # 境界体系：严格按《蛊真人》蛊师体系，一转至九转，每转四阶，共 36 阶

@@ -2,8 +2,8 @@
     Task Cultivation Timer - One-click Launcher (launcher.ps1)
     ==========================================================
     Detects Python on the machine; if missing, automatically downloads and
-    silently installs it (current user, no admin needed), then launches main.py.
-    Copy this whole folder to any Windows PC and double-click "start.bat".
+    silently installs it (elevated, all-users; a UAC prompt appears on first run), then launches main.py.
+    Copy this whole folder to any Windows PC and double-click the launcher .bat file.
     The user needs to install nothing manually.
     NOTE: This file is intentionally ASCII-only (no non-English characters) so it
     parses correctly under the system ANSI codepage on Chinese Windows.
@@ -17,7 +17,8 @@ if (-not $PROJECT_DIR) { $PROJECT_DIR = Split-Path -Parent $MyInvocation.MyComma
 if (-not $PROJECT_DIR) { $PROJECT_DIR = (Get-Location).Path }
 
 $MAIN_PY = Join-Path $PROJECT_DIR 'main.py'
-$LOG_FILE = Join-Path $PROJECT_DIR 'launcher.log'
+# Log goes to %TEMP% so the program folder stays clean (no stray log in user dir)
+$LOG_FILE = Join-Path $env:TEMP 'xiuxian-timer-launcher.log'
 
 function Write-Log {
     param([string]$Message, [string]$Color = 'White')
@@ -181,11 +182,16 @@ function Install-PythonIfMissing {
     }
 
     if ($pyDownloaded) {
-        Write-Log '[INFO] Installing Python silently (current user, added to PATH, no admin)...' 'Cyan'
+        # Install ALL USERS (machine-wide, needs admin) + add to PATH.
+        # Mirrors the v11 FlashTap installer: it only works under 360 / strict
+        # policies when run ELEVATED with InstallAllUsers=1. The launcher must be
+        # started as administrator (the start .bat self-elevates via UAC).
+        # A per-user (InstallAllUsers=0) non-elevated install gets blocked by 360
+        # (msiexec) and returns Windows Installer error 1625.
+        Write-Log '[INFO] Installing Python silently (all users, elevated, added to PATH)...' 'Cyan'
         try {
             Unblock-File -Path $pyInstaller -ErrorAction SilentlyContinue
-            # InstallAllUsers=0 -> per-user install, avoids UAC admin prompt
-            $pyProc = Start-Process -FilePath $pyInstaller -ArgumentList '/quiet', 'InstallAllUsers=0', 'PrependPath=1', 'Include_test=0' -Wait -PassThru
+            $pyProc = Start-Process -FilePath $pyInstaller -ArgumentList '/quiet', 'InstallAllUsers=1', 'PrependPath=1', 'Include_test=0' -Wait -PassThru
             $pyExitCode = if ($pyProc) { $pyProc.ExitCode } else { -1 }
             if ($pyExitCode -eq 0) {
                 Write-Log '[OK] Python installed' 'Green'
