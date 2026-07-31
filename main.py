@@ -137,6 +137,10 @@ class XiuXianTimer:
         self.lbl_round.pack(side="left", padx=12)
         self.lbl_history.pack(side="left", padx=12)
 
+        # 一键归零：清空全部任务与修行进度（破坏性操作，点击后需二次确认）
+        self.btn_reset = tk.Button(top, text="重置", command=self.reset_all)
+        self.btn_reset.pack(side="right", padx=12)
+
         # ---- 主体：左右两栏 ----
         main = tk.Frame(self.root)
         main.pack(side="top", fill="both", expand=True, padx=6, pady=4)
@@ -363,6 +367,39 @@ class XiuXianTimer:
         self.session_accum = 0.0
         self.session_start = 0.0
         self.lbl_time.config(text="00:00:00")
+
+    def reset_all(self):
+        """一键归零：清空全部任务与修行进度。
+
+        属于破坏性、不可逆操作，因此点击后会弹出二次确认框，
+        明确告知将清空的内容，需用户再次确认才真正执行。
+        """
+        # 二次确认：列出后果并强调不可恢复，避免误点造成损失
+        confirm = messagebox.askyesno(
+            "确认归零",
+            "此操作将彻底清空以下内容，且无法恢复：\n"
+            "  · 全部任务列表\n"
+            "  · 当前境界（回到一转初阶）\n"
+            "  · 本轮进度与历史累计总数\n\n"
+            "确定要归零、从头开始修行吗？"
+        )
+        if not confirm:
+            return
+        # 若正在修行，先安全停止计时再清空，避免状态残留
+        if self.running:
+            self.stop_timer(quiet=True)
+        # 全部归零
+        self.tasks = []
+        self.realm_index = 0
+        self.round_count = 0
+        self.history_total = 0
+        self.selected_index = None
+        self.lbl_current.config(text="未选择任务")
+        self.lbl_status.config(text="已归零，修行从头开始。")
+        self.refresh_task_list()
+        self.update_top_info()
+        self.update_button_states()
+        self.save_data()  # 关键事件后保存，确保落盘
 
     # ====================== 状态刷新 ======================
     def update_top_info(self):
